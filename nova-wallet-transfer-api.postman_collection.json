@@ -1,0 +1,305 @@
+{
+  "info": {
+    "name": "Nova Wallet Transfer API",
+    "description": "Collection covering happy-path, boundary, negative, security, idempotency, and concurrency checks",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Automated functional suite",
+      "item": [
+        {
+          "name": "Create wallet (happy path)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/wallets",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get wallet",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/wallets/:walletId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets", ":walletId"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Credit wallet",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountKobo\": 2500\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/wallets/:walletId/credit",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets", ":walletId", "credit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Transfer funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "happy-transfer-1", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 1500\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Boundary - daily limit exceeded",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "daily-limit-1", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 500001\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Negative - insufficient funds",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "insufficient-funds-1", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 999999\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Negative - invalid amount",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountKobo\": 0\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/wallets/:walletId/credit",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets", ":walletId", "credit"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Idempotency checks",
+      "item": [
+        {
+          "name": "Same key + same payload returns identical response",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "idempotent-1", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 2000\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Same key + different payload should conflict (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "idempotent-1", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 2500\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Security pass",
+      "item": [
+        {
+          "name": "Missing bearer token",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountKobo\": 100\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/wallets",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Invalid bearer token",
+          "request": {
+            "method": "GET",
+            "header": [
+              { "key": "Authorization", "value": "Bearer bad-token", "type": "text" }
+            ],
+            "url": {
+              "raw": "http://localhost:3000/wallets/:walletId",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets", ":walletId"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Injection attempt in payload",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amountKobo\": \"1 OR 1=1\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/wallets/:walletId/credit",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["wallets", ":walletId", "credit"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Concurrency sample requests",
+      "item": [
+        {
+          "name": "Concurrent transfer batch (run in collection runner)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer test-token", "type": "text" },
+              { "key": "Idempotency-Key", "value": "concurrent-0001", "type": "text" },
+              { "key": "Content-Type", "value": "application/json", "type": "text" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fromWalletId\": \"wallet-a\",\n  \"toWalletId\": \"wallet-b\",\n  \"amountKobo\": 10000\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3000/transfers",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3000",
+              "path": ["transfers"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

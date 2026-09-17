@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Nova Wallet Transfer API
+  version: 1.0.0
+  description: Lightweight wallet transfer API with bearer authentication, kobo balances, atomic transfers, idempotency, and daily outbound transfer limits.
+servers:
+  - url: http://localhost:3000
+security:
+  - BearerAuth: []
+paths:
+  /wallets:
+    post:
+      summary: Create a wallet
+      responses:
+        '201':
+          description: Wallet created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+  /wallets/{id}:
+    get:
+      summary: Get wallet balance
+      parameters:
+        - $ref: '#/components/parameters/WalletId'
+      responses:
+        '200':
+          description: Wallet details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+  /wallets/{id}/credit:
+    post:
+      summary: Credit a wallet
+      parameters:
+        - $ref: '#/components/parameters/WalletId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreditRequest'
+      responses:
+        '200':
+          description: Updated wallet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+  /transfers:
+    post:
+      summary: Transfer funds between wallets
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransferRequest'
+      responses:
+        '200':
+          description: Transfer completed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/WalletNotFound'
+        '409':
+          $ref: '#/components/responses/IdempotencyConflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    WalletId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: string
+        balanceKobo:
+          type: integer
+          description: Wallet balance in kobo.
+      required:
+        - id
+        - balanceKobo
+    CreditRequest:
+      type: object
+      properties:
+        amountKobo:
+          type: integer
+          minimum: 1
+          description: Amount to credit in kobo.
+      required:
+        - amountKobo
+    TransferRequest:
+      type: object
+      properties:
+        fromWalletId:
+          type: string
+        toWalletId:
+          type: string
+        amountKobo:
+          type: integer
+          minimum: 1
+      required:
+        - fromWalletId
+        - toWalletId
+        - amountKobo
+    Transfer:
+      type: object
+      properties:
+        id:
+          type: string
+        fromWalletId:
+          type: string
+        toWalletId:
+          type: string
+        amountKobo:
+          type: integer
+        status:
+          type: string
+          enum: [completed]
+      required:
+        - id
+        - fromWalletId
+        - toWalletId
+        - amountKobo
+        - status
+  responses:
+    Unauthorized:
+      description: Authorization required or invalid bearer token.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    WalletNotFound:
+      description: Wallet was not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ValidationError:
+      description: Invalid input or business rule failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    IdempotencyConflict:
+      description: Same idempotency key was already used with a different payload.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: integer
+        error:
+          type: string
+        message:
+          type: string
+      required:
+        - status
+        - error
+        - message

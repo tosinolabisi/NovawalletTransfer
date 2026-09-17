@@ -1,0 +1,26 @@
+{
+  "name": "nova-wallet-transfer-api",
+  "version": "1.0.0",
+  "description": "Lightweight wallet transfer API",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest --runInBand",
+    "test:newman": "node scripts/run-newman.js"
+  },
+  "keywords": [
+    "wallet",
+    "api",
+    "transfer"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "newman": "^6.2.2",
+    "supertest": "^7.0.0"
+  }
+}
